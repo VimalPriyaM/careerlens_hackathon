@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
+import { existsSync } from 'fs';
 import { rateLimiter } from './middleware/rateLimiter';
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
@@ -9,7 +9,10 @@ import scanRouter from './routes/scan';
 import chatRouter from './routes/chat';
 import generateRouter from './routes/generate';
 
-dotenv.config();
+// Only load .env in local dev — Railway injects env vars directly
+if (existsSync('.env')) {
+  require('dotenv').config();
+}
 
 // ── Environment variable validation ──
 const REQUIRED_ENV_VARS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'GROQ_API_KEY'] as const;

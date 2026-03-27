@@ -1,14 +1,10 @@
 import OpenAI from 'openai';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const apiKey = process.env.GROQ_API_KEY;
 
 let groqClient: OpenAI | null = null;
 
 export const getLLM = (): OpenAI => {
   if (!groqClient) {
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       throw new Error('Missing GROQ_API_KEY environment variable');
     }
@@ -20,5 +16,4 @@ export const getLLM = (): OpenAI => {
   return groqClient;
 };
 
-// Backward-compatible alias
 export const getClaude = getLLM;
