@@ -21,6 +21,9 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Skip refetch if we already have cached data
+    if (cachedScan) { setLoading(false); return; }
+
     const load = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();

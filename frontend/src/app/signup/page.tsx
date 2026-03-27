@@ -17,6 +17,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -36,8 +37,8 @@ export default function SignupPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push('/dashboard');
-      router.refresh();
+      setLoading(false);
+      setSuccess('Check your email to confirm your account, then log in.');
     }
   };
 
@@ -122,7 +123,13 @@ export default function SignupPage() {
               <p className="text-xs text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            {success && (
+              <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-md">
+                {success}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={loading || !!success}>
               {loading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
