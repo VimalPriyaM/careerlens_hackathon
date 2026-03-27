@@ -22,15 +22,28 @@ export async function apiCall<T>(endpoint: string, options: ApiOptions = {}): Pr
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method,
-    headers,
-    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      method,
+      headers,
+      body: isFormData ? body : body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error('Unable to connect. Check your internet connection.');
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `API error: ${response.status}`);
+    const status = response.status;
+    const error = await response.json().catch(() => ({ message: '' }));
+    const serverMsg = error.message || '';
+
+    if (status === 401) throw new Error(serverMsg || 'Session expired. Please log in again.');
+    if (status === 404) throw new Error(serverMsg || 'Resource not found.');
+    if (status === 429) throw new Error(serverMsg || 'Too many requests. Wait a moment and try again.');
+    if (status === 502) throw new Error(serverMsg || 'Service temporarily unavailable. Try again in a few seconds.');
+    if (status >= 500) throw new Error(serverMsg || 'Something went wrong. Please try again.');
+    throw new Error(serverMsg || `API error: ${status}`);
   }
 
   return response.json();

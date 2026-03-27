@@ -2,6 +2,7 @@ import pdfParse from 'pdf-parse';
 import { getClaude } from '../utils/claude';
 import { RESUME_EXTRACTION_SYSTEM_PROMPT, buildResumeExtractionPrompt } from '../prompts/resumeExtraction';
 import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS } from '../config/constants';
+import { parseLLMJSON } from '../utils/parseLLMJSON';
 
 export interface ResumeSkill {
   name: string;
@@ -59,14 +60,7 @@ export async function parseResume(pdfBuffer: Buffer): Promise<ParsedResume> {
 
   const responseText = response.choices[0]?.message?.content || '';
 
-  let parsed: any;
-  try {
-    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    console.error('Failed to parse resume extraction response:', responseText);
-    throw new Error('Failed to parse resume data. Please try again.');
-  }
+  const parsed = parseLLMJSON(responseText, 'resume extraction');
 
   return {
     raw_text: rawText,

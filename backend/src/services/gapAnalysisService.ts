@@ -1,6 +1,7 @@
 import { getClaude } from '../utils/claude';
 import { GAP_ANALYSIS_SYSTEM_PROMPT, buildGapAnalysisPrompt } from '../prompts/gapAnalysis';
 import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS } from '../config/constants';
+import { parseLLMJSON } from '../utils/parseLLMJSON';
 import { EvidenceScore } from './evidenceService';
 
 export interface GapAnalysisResult {
@@ -64,14 +65,7 @@ export async function generateGapAnalysis(
 
   const responseText = response.choices[0]?.message?.content || '';
 
-  let parsed: any;
-  try {
-    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    console.error('Failed to parse gap analysis response:', responseText);
-    throw new Error('Failed to generate gap analysis. Please try again.');
-  }
+  const parsed = parseLLMJSON(responseText, 'gap analysis');
 
   return {
     gap_summary: parsed.gap_summary || '',

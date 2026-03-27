@@ -7,6 +7,11 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'CareerLens AI — Prove It or Build It',
   description: 'Cross-reference your Resume, LinkedIn, and GitHub against your target role. Get honest evidence scores and a project roadmap to close the gaps.',
+  openGraph: {
+    title: 'CareerLens AI',
+    description: 'Cross-reference your Resume, LinkedIn, and GitHub against your target role. Get honest evidence scores and a project roadmap to close the gaps.',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

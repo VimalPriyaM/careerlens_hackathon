@@ -1,6 +1,7 @@
 import { getClaude } from '../utils/claude';
 import { TARGET_ROLE_SYSTEM_PROMPT, buildTargetRolePrompt } from '../prompts/targetRoleSkills';
 import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS } from '../config/constants';
+import { parseLLMJSON } from '../utils/parseLLMJSON';
 
 export interface TargetSkill {
   name: string;
@@ -29,14 +30,7 @@ export async function analyzeTargetRole(targetRole: string): Promise<TargetRoleA
 
   const responseText = response.choices[0]?.message?.content || '';
 
-  let parsed: any;
-  try {
-    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    console.error('Failed to parse target role analysis response:', responseText);
-    throw new Error('Failed to analyze target role. Please try again.');
-  }
+  const parsed = parseLLMJSON(responseText, 'target role analysis');
 
   return {
     role: parsed.role || targetRole,

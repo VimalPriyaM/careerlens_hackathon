@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { sendChatMessage } from '../services/chatService';
 import { listChatSessions, getSessionMessages } from '../services/historyService';
+import { sanitizeString } from '../utils/sanitize';
 
 const router = Router();
 
@@ -25,10 +26,11 @@ const chatRateLimiter = rateLimit({
 router.post('/chat', authMiddleware, chatRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const { session_id, scan_id, message } = req.body;
+    const { session_id, scan_id } = req.body;
+    const message = sanitizeString(req.body.message, 2000);
 
     // Validate message
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    if (!message || message.length === 0) {
       res.status(400).json({
         error: true,
         code: 'INVALID_MESSAGE',
@@ -37,20 +39,11 @@ router.post('/chat', authMiddleware, chatRateLimiter, async (req: AuthenticatedR
       return;
     }
 
-    if (message.length > 2000) {
-      res.status(400).json({
-        error: true,
-        code: 'MESSAGE_TOO_LONG',
-        message: 'Message must be 2000 characters or fewer.',
-      });
-      return;
-    }
-
     const result = await sendChatMessage(
       userId,
       session_id || null,
       scan_id || null,
-      message.trim()
+      message
     );
 
     res.json({

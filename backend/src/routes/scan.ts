@@ -8,6 +8,7 @@ import { analyzeTargetRole } from '../services/targetRoleService';
 import { supabaseAdmin } from '../utils/supabase';
 import { computeEvidence } from '../services/evidenceService';
 import { generateGapAnalysis } from '../services/gapAnalysisService';
+import { sanitizeString, validateGithubUsername } from '../utils/sanitize';
 
 const router = Router();
 
@@ -48,15 +49,17 @@ router.post('/scan', authMiddleware, (req: AuthenticatedRequest, res: Response, 
         });
       }
 
-      if (!githubUsername || typeof githubUsername !== 'string' || githubUsername.trim().length === 0) {
+      const ghValidation = validateGithubUsername(githubUsername);
+      if (!ghValidation.valid) {
         return res.status(400).json({
           error: true,
-          code: 'MISSING_GITHUB',
-          message: 'GitHub username is required.',
+          code: 'INVALID_GITHUB',
+          message: ghValidation.error || 'Invalid GitHub username.',
         });
       }
 
-      if (!targetRole || typeof targetRole !== 'string' || targetRole.trim().length === 0) {
+      const cleanRole = sanitizeString(targetRole, 200);
+      if (cleanRole.length === 0) {
         return res.status(400).json({
           error: true,
           code: 'MISSING_TARGET_ROLE',
@@ -66,8 +69,7 @@ router.post('/scan', authMiddleware, (req: AuthenticatedRequest, res: Response, 
 
       const resumeBuffer = files.resume[0].buffer;
       const linkedinBuffer = files.linkedin[0].buffer;
-      const cleanUsername = githubUsername.trim();
-      const cleanRole = targetRole.trim();
+      const cleanUsername = ghValidation.cleaned;
 
       // Generate scan ID upfront for file storage paths
       const scanId = crypto.randomUUID();

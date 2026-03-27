@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -10,10 +11,29 @@ interface ScoreGaugeProps {
 }
 
 export function ScoreGauge({ score, verified, total }: ScoreGaugeProps) {
+  const [displayed, setDisplayed] = useState(0);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const duration = 800;
+    const start = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayed(Math.round(eased * score));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [score]);
+
   const color = score >= 60 ? '#10b981' : score >= 35 ? '#f59e0b' : '#ef4444';
 
   const data = [
-    { name: 'score', value: score, fill: color },
+    { name: 'score', value: displayed, fill: color },
   ];
 
   return (
@@ -37,7 +57,7 @@ export function ScoreGauge({ score, verified, total }: ScoreGaugeProps) {
             </RadialBarChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold" style={{ color }}>{score}</span>
+            <span className="text-2xl font-bold" style={{ color }}>{displayed}</span>
             <span className="text-[10px] text-muted-foreground">out of 100</span>
           </div>
         </div>

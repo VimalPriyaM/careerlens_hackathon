@@ -11,6 +11,19 @@ import generateRouter from './routes/generate';
 
 dotenv.config();
 
+// ── Environment variable validation ──
+const REQUIRED_ENV_VARS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'GROQ_API_KEY'] as const;
+for (const varName of REQUIRED_ENV_VARS) {
+  if (!process.env[varName]) {
+    console.error(`FATAL: Missing required environment variable: ${varName}`);
+    process.exit(1);
+  }
+}
+
+if (!process.env.GITHUB_TOKEN) {
+  console.warn('WARNING: GITHUB_TOKEN is not set. GitHub API calls will be rate-limited to 60 requests/hour.');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 

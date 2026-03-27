@@ -3,6 +3,7 @@ import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { getClaude } from '../utils/claude';
 import { CLAUDE_MODEL } from '../config/constants';
 import { supabaseAdmin } from '../utils/supabase';
+import { sanitizeString } from '../utils/sanitize';
 
 const router = Router();
 
@@ -11,14 +12,12 @@ const router = Router();
  */
 router.post('/generate-bullet', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { project_description, tech_stack, scan_id } = req.body;
+    const { scan_id } = req.body;
+    const project_description = sanitizeString(req.body.project_description, 1000);
+    const raw_tech_stack = req.body.tech_stack;
 
     // Validate project_description
-    if (
-      !project_description ||
-      typeof project_description !== 'string' ||
-      project_description.trim().length < 10
-    ) {
+    if (project_description.length < 10) {
       res.status(400).json({
         error: true,
         code: 'INVALID_DESCRIPTION',
@@ -27,17 +26,8 @@ router.post('/generate-bullet', authMiddleware, async (req: AuthenticatedRequest
       return;
     }
 
-    if (project_description.length > 1000) {
-      res.status(400).json({
-        error: true,
-        code: 'DESCRIPTION_TOO_LONG',
-        message: 'Project description must be 1000 characters or fewer.',
-      });
-      return;
-    }
-
     // Validate tech_stack
-    if (!tech_stack || !Array.isArray(tech_stack) || tech_stack.length === 0) {
+    if (!raw_tech_stack || !Array.isArray(raw_tech_stack) || raw_tech_stack.length === 0) {
       res.status(400).json({
         error: true,
         code: 'INVALID_TECH_STACK',
@@ -45,6 +35,10 @@ router.post('/generate-bullet', authMiddleware, async (req: AuthenticatedRequest
       });
       return;
     }
+
+    const tech_stack: string[] = raw_tech_stack
+      .map((item: unknown) => sanitizeString(item, 100))
+      .filter((item: string) => item.length > 0);
 
     // Fetch scan context if provided
     let roleContext = '';

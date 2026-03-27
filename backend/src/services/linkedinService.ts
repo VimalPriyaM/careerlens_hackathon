@@ -2,6 +2,7 @@ import pdfParse from 'pdf-parse';
 import { getClaude } from '../utils/claude';
 import { LINKEDIN_EXTRACTION_SYSTEM_PROMPT, buildLinkedInExtractionPrompt } from '../prompts/linkedinExtraction';
 import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS } from '../config/constants';
+import { parseLLMJSON } from '../utils/parseLLMJSON';
 
 export interface LinkedInSkill {
   name: string;
@@ -67,14 +68,7 @@ export async function parseLinkedIn(pdfBuffer: Buffer): Promise<ParsedLinkedIn> 
 
   const responseText = response.choices[0]?.message?.content || '';
 
-  let parsed: any;
-  try {
-    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    console.error('Failed to parse LinkedIn extraction response:', responseText);
-    throw new Error('Failed to parse LinkedIn data. Please try again.');
-  }
+  const parsed = parseLLMJSON(responseText, 'LinkedIn extraction');
 
   return {
     raw_text: rawText,

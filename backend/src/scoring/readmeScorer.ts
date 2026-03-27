@@ -1,5 +1,6 @@
 import { getClaude } from '../utils/claude';
 import { CLAUDE_MODEL } from '../config/constants';
+import { parseLLMJSON } from '../utils/parseLLMJSON';
 
 const README_QUALITY_SYSTEM_PROMPT = `You are evaluating the README.md of a GitHub repository.
 Rate each dimension on a scale of 1–5.
@@ -77,8 +78,7 @@ ${readmeTexts}`;
     });
 
     const responseText = response.choices[0]?.message?.content || '';
-    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const ratings = JSON.parse(cleaned);
+    const ratings = parseLLMJSON(responseText, 'README scoring');
 
     const ratingsArray = Array.isArray(ratings) ? ratings : [ratings];
 

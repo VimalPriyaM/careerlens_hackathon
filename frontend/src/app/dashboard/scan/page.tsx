@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import { createClient } from '@/lib/supabase-browser';
@@ -56,6 +56,8 @@ export default function ScanPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [timeoutMsg, setTimeoutMsg] = useState('');
+  const scanStartRef = useRef<number>(0);
 
   const onResumeDrop = useCallback((f: File[]) => { if (f.length > 0) setResumeFile(f[0]); }, []);
   const resumeDropzone = useDropzone({ onDrop: onResumeDrop, accept: { 'application/pdf': ['.pdf'] }, maxSize: 5 * 1024 * 1024, maxFiles: 1 });
@@ -80,9 +82,27 @@ export default function ScanPage() {
       const activeSession = refreshedSession || (await supabase.auth.getSession()).data.session;
       if (!activeSession?.access_token) throw new Error('Session expired. Please log in again.');
 
-      const progressInterval = setInterval(() => {
-        setCurrentStep((prev) => Math.min(prev + 1, PROGRESS_STEPS.length - 2));
-      }, 4000);
+      scanStartRef.current = Date.now();
+      setTimeoutMsg('');
+
+      const advanceStep = () => {
+        setCurrentStep((prev) => {
+          if (prev >= PROGRESS_STEPS.length - 2) return prev;
+          return prev + 1;
+        });
+        const delay = 2500 + Math.random() * 1500;
+        progressTimeout = setTimeout(advanceStep, delay);
+      };
+      let progressTimeout = setTimeout(advanceStep, 2500 + Math.random() * 1500);
+
+      const timeoutChecker = setInterval(() => {
+        const elapsed = (Date.now() - scanStartRef.current) / 1000;
+        if (elapsed > 90) {
+          setTimeoutMsg('Taking longer than expected. Please wait...');
+        } else if (elapsed > 45) {
+          setTimeoutMsg('Still working — analyzing GitHub repositories takes a moment for larger profiles.');
+        }
+      }, 5000);
 
       const formData = new FormData();
       formData.append('resume', resumeFile);
@@ -96,7 +116,8 @@ export default function ScanPage() {
         body: formData,
       });
 
-      clearInterval(progressInterval);
+      clearTimeout(progressTimeout);
+      clearInterval(timeoutChecker);
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ message: 'Scan failed' }));
@@ -308,6 +329,9 @@ export default function ScanPage() {
             </div>
           </div>
         </Card>
+        {timeoutMsg && (
+          <p className="text-xs text-muted-foreground text-center mt-4">{timeoutMsg}</p>
+        )}
       </div>
     );
   }

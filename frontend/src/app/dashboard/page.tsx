@@ -5,15 +5,19 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { ScanDashboard } from '@/components/dashboard/ScanDashboard';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
+import { ErrorCard } from '@/components/ui/ErrorCard';
+import { useProfileStore } from '@/store/useProfileStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function DashboardPage() {
   const supabase = createClient();
-  const [scan, setScan] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { currentScan: cachedScan, setCachedScan } = useProfileStore();
+  const [scan, setScan] = useState<any>(cachedScan);
+  const [loading, setLoading] = useState(!cachedScan);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -28,37 +32,30 @@ export default function DashboardPage() {
         if (!res.ok) throw new Error('Failed to fetch scans');
         const { scans } = await res.json();
 
-        if (scans.length === 0) { setLoading(false); return; }
+        if (scans.length === 0) { setScan(null); setLoading(false); return; }
 
         const detailRes = await fetch(`${API_URL}/scans/${scans[0].id}`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (!detailRes.ok) throw new Error('Failed to fetch scan details');
-        setScan(await detailRes.json());
+        const freshScan = await detailRes.json();
+        setScan(freshScan);
+        setCachedScan(freshScan);
       } catch (e: any) {
-        setError(e.message);
+        if (!cachedScan) setError(e.message);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [supabase]);
+  }, [supabase, cachedScan, setCachedScan]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error) {
-    return (
-      <Card><CardContent className="py-10 text-center">
-        <p className="text-sm text-destructive mb-3">{error}</p>
-        <button onClick={() => window.location.reload()} className="text-sm text-primary hover:underline">Try again</button>
-      </CardContent></Card>
-    );
+    return <ErrorCard message={error} onRetry={() => window.location.reload()} />;
   }
 
   if (!scan) {

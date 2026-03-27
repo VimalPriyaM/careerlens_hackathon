@@ -1,5 +1,6 @@
 import { getClaude } from '../utils/claude';
 import { CLAUDE_MODEL } from '../config/constants';
+import { parseLLMJSON } from '../utils/parseLLMJSON';
 
 const CODE_QUALITY_SYSTEM_PROMPT = `You are a senior code reviewer. Assess the quality of this source code file.
 Rate each dimension on a scale of 1–5 where:
@@ -92,8 +93,7 @@ ${filesText}`;
     });
 
     const responseText = response.choices[0]?.message?.content || '';
-    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const ratings = JSON.parse(cleaned);
+    const ratings = parseLLMJSON(responseText, 'code quality scoring');
 
     // Handle both array and single object responses
     const ratingsArray = Array.isArray(ratings) ? ratings : [ratings];
