@@ -30,11 +30,26 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-    'http://localhost:3001',
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://careerlens-hackathon.vercel.app',
+    ].filter(Boolean);
+    // Match with or without trailing slash
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (allowed.some(u => normalizedOrigin === u!.replace(/\/$/, ''))) {
+      return callback(null, true);
+    }
+    // Also allow any vercel preview URLs
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));
