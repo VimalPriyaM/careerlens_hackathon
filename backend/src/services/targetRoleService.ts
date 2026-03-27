@@ -16,16 +16,18 @@ export interface TargetRoleAnalysis {
 }
 
 export async function analyzeTargetRole(targetRole: string): Promise<TargetRoleAnalysis> {
-  const claude = getClaude();
+  const llm = getClaude();
 
-  const response = await claude.messages.create({
+  const response = await llm.chat.completions.create({
     model: CLAUDE_MODEL,
     max_tokens: CLAUDE_MAX_TOKENS,
-    system: TARGET_ROLE_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: buildTargetRolePrompt(targetRole) }],
+    messages: [
+      { role: 'system', content: TARGET_ROLE_SYSTEM_PROMPT },
+      { role: 'user', content: buildTargetRolePrompt(targetRole) },
+    ],
   });
 
-  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+  const responseText = response.choices[0]?.message?.content || '';
 
   let parsed: any;
   try {

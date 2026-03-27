@@ -1,18 +1,24 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
+const apiKey = process.env.GROQ_API_KEY;
 
-let claudeClient: Anthropic | null = null;
+let groqClient: OpenAI | null = null;
 
-export const getClaude = (): Anthropic => {
-  if (!claudeClient) {
+export const getLLM = (): OpenAI => {
+  if (!groqClient) {
     if (!apiKey) {
-      throw new Error('Missing ANTHROPIC_API_KEY environment variable');
+      throw new Error('Missing GROQ_API_KEY environment variable');
     }
-    claudeClient = new Anthropic({ apiKey });
+    groqClient = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.groq.com/openai/v1',
+    });
   }
-  return claudeClient;
+  return groqClient;
 };
+
+// Backward-compatible alias
+export const getClaude = getLLM;

@@ -90,23 +90,17 @@ Tech Stack: ${techStackStr}${roleContext}
 
 Generate a single polished resume bullet point for this project.`;
 
-    const claude = getClaude();
-    const response = await claude.messages.create({
+    const llm = getClaude();
+    const response = await llm.chat.completions.create({
       model: CLAUDE_MODEL,
       max_tokens: 256,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userContent }],
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
     });
 
-    const bullet =
-      response.content
-        .filter((block) => block.type === 'text')
-        .map((block) => {
-          if (block.type === 'text') return block.text;
-          return '';
-        })
-        .join('')
-        .trim() || 'Unable to generate bullet point. Please try again.';
+    const bullet = (response.choices[0]?.message?.content || '').trim() || 'Unable to generate bullet point. Please try again.';
 
     res.json({ bullet });
   } catch (error: any) {

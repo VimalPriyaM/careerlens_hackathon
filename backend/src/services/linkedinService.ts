@@ -55,15 +55,17 @@ export async function parseLinkedIn(pdfBuffer: Buffer): Promise<ParsedLinkedIn> 
     throw new Error('LinkedIn PDF appears to be empty or unreadable.');
   }
 
-  const claude = getClaude();
-  const response = await claude.messages.create({
+  const llm = getClaude();
+  const response = await llm.chat.completions.create({
     model: CLAUDE_MODEL,
     max_tokens: CLAUDE_MAX_TOKENS,
-    system: LINKEDIN_EXTRACTION_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: buildLinkedInExtractionPrompt(rawText) }],
+    messages: [
+      { role: 'system', content: LINKEDIN_EXTRACTION_SYSTEM_PROMPT },
+      { role: 'user', content: buildLinkedInExtractionPrompt(rawText) },
+    ],
   });
 
-  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+  const responseText = response.choices[0]?.message?.content || '';
 
   let parsed: any;
   try {

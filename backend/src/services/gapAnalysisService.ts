@@ -28,7 +28,7 @@ export async function generateGapAnalysis(
   conflicts: { skill: string; issue: string; risk_level: string; action: string }[],
   hiddenSkills: { skill: string; found_on: string[]; action: string }[]
 ): Promise<GapAnalysisResult> {
-  const claude = getClaude();
+  const llm = getClaude();
 
   // Build a compact evidence summary for the prompt
   const evidenceSummary = evidenceScores.map((e) => ({
@@ -41,11 +41,11 @@ export async function generateGapAnalysis(
     github: e.cross_reference.github,
   }));
 
-  const response = await claude.messages.create({
+  const response = await llm.chat.completions.create({
     model: CLAUDE_MODEL,
     max_tokens: CLAUDE_MAX_TOKENS,
-    system: GAP_ANALYSIS_SYSTEM_PROMPT,
     messages: [
+      { role: 'system', content: GAP_ANALYSIS_SYSTEM_PROMPT },
       {
         role: 'user',
         content: buildGapAnalysisPrompt(
@@ -62,7 +62,7 @@ export async function generateGapAnalysis(
     ],
   });
 
-  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+  const responseText = response.choices[0]?.message?.content || '';
 
   let parsed: any;
   try {

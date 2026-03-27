@@ -71,34 +71,28 @@ export async function sendChatMessage(
   const pastMessages = await getSessionMessages(userId, activeSessionId);
   const recentMessages = pastMessages.slice(-20);
 
-  // 4. Build Claude messages array
-  const claudeMessages: Array<{ role: 'user' | 'assistant'; content: string }> =
-    recentMessages.map((m: any) => ({
+  // 4. Build messages array with system prompt
+  const llmMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: systemPrompt },
+    ...recentMessages.map((m: any) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
-    }));
+    })),
+  ];
 
   // Add the new user message
-  claudeMessages.push({ role: 'user', content: message });
+  llmMessages.push({ role: 'user', content: message });
 
-  // 5. Call Claude
-  const claude = getClaude();
-  const response = await claude.messages.create({
+  // 5. Call LLM
+  const llm = getClaude();
+  const response = await llm.chat.completions.create({
     model: CLAUDE_MODEL,
     max_tokens: 1024,
-    system: systemPrompt,
-    messages: claudeMessages,
+    messages: llmMessages,
   });
 
   // Extract text from response
-  const reply =
-    response.content
-      .filter((block) => block.type === 'text')
-      .map((block) => {
-        if (block.type === 'text') return block.text;
-        return '';
-      })
-      .join('') || 'I was unable to generate a response. Please try again.';
+  const reply = response.choices[0]?.message?.content || 'I was unable to generate a response. Please try again.';
 
   // 6. Store both messages
   await storeMessage(activeSessionId, 'user', message);

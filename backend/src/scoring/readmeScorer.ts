@@ -66,15 +66,17 @@ Return ONLY valid JSON — an array:
 ${readmeTexts}`;
 
   try {
-    const claude = getClaude();
-    const response = await claude.messages.create({
+    const llm = getClaude();
+    const response = await llm.chat.completions.create({
       model: CLAUDE_MODEL,
       max_tokens: 512,
-      system: README_QUALITY_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: batchPrompt }],
+      messages: [
+        { role: 'system', content: README_QUALITY_SYSTEM_PROMPT },
+        { role: 'user', content: batchPrompt },
+      ],
     });
 
-    const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+    const responseText = response.choices[0]?.message?.content || '';
     const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const ratings = JSON.parse(cleaned);
 

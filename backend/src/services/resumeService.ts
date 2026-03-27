@@ -47,15 +47,17 @@ export async function parseResume(pdfBuffer: Buffer): Promise<ParsedResume> {
     throw new Error('Resume PDF appears to be empty or contains too little text.');
   }
 
-  const claude = getClaude();
-  const response = await claude.messages.create({
+  const llm = getClaude();
+  const response = await llm.chat.completions.create({
     model: CLAUDE_MODEL,
     max_tokens: CLAUDE_MAX_TOKENS,
-    system: RESUME_EXTRACTION_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: buildResumeExtractionPrompt(rawText) }],
+    messages: [
+      { role: 'system', content: RESUME_EXTRACTION_SYSTEM_PROMPT },
+      { role: 'user', content: buildResumeExtractionPrompt(rawText) },
+    ],
   });
 
-  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+  const responseText = response.choices[0]?.message?.content || '';
 
   let parsed: any;
   try {
