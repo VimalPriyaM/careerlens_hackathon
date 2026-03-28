@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
+import { Rocket } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
 
 interface ProjectRoadmapProps {
@@ -12,11 +13,14 @@ export function ProjectRoadmap({ projects }: ProjectRoadmapProps) {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-0.5">Recommended Projects</h3>
-      <p className="text-xs text-muted-foreground mb-2">Ordered by impact — build the first one first.</p>
-      <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <Rocket className="w-4 h-4 text-indigo-600" />
+        <h2 className="text-lg font-semibold text-slate-900">Recommended Projects</h2>
+      </div>
+      <p className="text-xs text-slate-400 mb-4">Ordered by impact — build the first one first.</p>
+      <div className="space-y-4">
         {projects.map((p: any, i: number) => (
-          <ProjectCard key={i} project={p} isFirst={i === 0} />
+          <ProjectCard key={i} project={p} isFirst={i === 0} index={i} />
         ))}
       </div>
     </div>

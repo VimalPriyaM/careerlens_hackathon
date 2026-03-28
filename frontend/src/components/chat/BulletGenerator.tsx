@@ -73,23 +73,23 @@ export function BulletGenerator({ scanId }: BulletGeneratorProps) {
   };
 
   return (
-    <Card className="mb-4">
-      <CardContent className="py-3">
+    <Card className="mb-3 sm:mb-4 rounded-xl border-slate-200">
+      <CardContent className="py-3 px-3 sm:px-4">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors w-full text-left"
+          className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors w-full text-left min-h-[40px]"
         >
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          Generate Resume Bullet
+          <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
+          <span className="flex-1">Generate Resume Bullet</span>
           {expanded ? (
-            <ChevronDown className="w-4 h-4 ml-auto" />
+            <ChevronDown className="w-4 h-4 flex-shrink-0" />
           ) : (
-            <ChevronRight className="w-4 h-4 ml-auto" />
+            <ChevronRight className="w-4 h-4 flex-shrink-0" />
           )}
         </button>
 
         {expanded && (
-          <div className="mt-4 space-y-3">
+          <div className="mt-3 sm:mt-4 space-y-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">
                 Describe the project you built
@@ -99,7 +99,7 @@ export function BulletGenerator({ scanId }: BulletGeneratorProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Built a REST API that processes user uploads and stores results in PostgreSQL..."
                 rows={3}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-slate-300"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-slate-300"
               />
             </div>
 
@@ -112,14 +112,14 @@ export function BulletGenerator({ scanId }: BulletGeneratorProps) {
                 value={techStack}
                 onChange={(e) => setTechStack(e.target.value)}
                 placeholder="Python, FastAPI, PostgreSQL, Docker"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
               />
             </div>
 
             <button
               onClick={generate}
               disabled={loading || !description.trim() || !techStack.trim()}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-800 text-white px-4 py-2 text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-800 text-white px-4 py-2.5 text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
             >
               {loading ? (
                 <>
@@ -132,16 +132,16 @@ export function BulletGenerator({ scanId }: BulletGeneratorProps) {
             </button>
 
             {error && (
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600 break-words">{error}</p>
             )}
 
             {bullet && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-green-900">{bullet}</p>
-                <div className="flex gap-2 mt-3">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4">
+                <p className="text-sm font-medium text-green-900 break-words">{bullet}</p>
+                <div className="flex flex-wrap gap-2 mt-3">
                   <button
                     onClick={copyToClipboard}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-900 bg-green-100 hover:bg-green-200 rounded-md px-3 py-1.5 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-900 bg-green-100 hover:bg-green-200 rounded-lg px-3 py-2 transition-colors min-h-[36px]"
                   >
                     <Copy className="w-3 h-3" />
                     {copied ? 'Copied!' : 'Copy'}
@@ -149,7 +149,7 @@ export function BulletGenerator({ scanId }: BulletGeneratorProps) {
                   <button
                     onClick={generate}
                     disabled={loading}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-900 bg-green-100 hover:bg-green-200 rounded-md px-3 py-1.5 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-900 bg-green-100 hover:bg-green-200 rounded-lg px-3 py-2 transition-colors min-h-[36px] disabled:opacity-50"
                   >
                     <RefreshCw className="w-3 h-3" />
                     Regenerate

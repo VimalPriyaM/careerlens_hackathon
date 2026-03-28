@@ -1,0 +1,38 @@
+# CareerLens AI — Requirements
+# This is a Node.js/TypeScript project. Dependencies are managed via npm.
+# See backend/package.json and frontend/package.json for full dependency lists.
+
+# ── Prerequisites ──
+# Node.js >= 18
+# npm >= 9
+
+# ── External Services ──
+# Supabase account (free tier works) — https://supabase.com
+# Groq API key — https://console.groq.com
+# GitHub Personal Access Token — https://github.com/settings/tokens
+# Vercel account (for frontend deployment) — https://vercel.com
+
+# ── Backend Dependencies (npm install) ──
+# @supabase/supabase-js   — Supabase client
+# express                  — HTTP server
+# @octokit/rest            — GitHub API client
+# openai                   — LLM client (Groq-compatible)
+# pdf-parse                — PDF text extraction
+# multer                   — File upload handling
+# helmet                   — Security headers
+# cors                     — Cross-origin support
+# express-rate-limit       — API rate limiting
+# jsonwebtoken             — JWT verification
+# dotenv                   — Environment variables
+
+# ── Frontend Dependencies (npm install) ──
+# next                     — React framework (v14)
+# react / react-dom        — UI library
+# @supabase/ssr            — Supabase SSR client
+# tailwindcss              — Utility CSS
+# recharts                 — Charts
+# zustand                  — State management
+# lucide-react             — Icons
+# react-dropzone           — File upload UI
+# html2canvas / jspdf      — PDF export
+# class-variance-authority — Component variants

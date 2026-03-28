@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   FileText, Target, Upload, CheckCircle, AlertCircle, Loader2, Info,
-  ArrowRight, Sparkles, X, RotateCcw, ArrowLeft, Code2, Briefcase,
+  ArrowRight, Sparkles, X, ArrowLeft, Code2, Briefcase, Download,
 } from 'lucide-react';
 import { FaLinkedin, FaGithub } from 'react-icons/fa';
 
@@ -41,6 +41,7 @@ interface ScanResult {
   delta_projection: { current_readiness: number; projected_readiness: number };
   gap_summary: string;
   quick_wins: string[];
+  notes?: string[];
   created_at: string;
 }
 
@@ -57,7 +58,9 @@ export default function ScanPage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [timeoutMsg, setTimeoutMsg] = useState('');
+  const [pdfGenerating, setPdfGenerating] = useState(false);
   const scanStartRef = useRef<number>(0);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const onResumeDrop = useCallback((f: File[]) => { if (f.length > 0) setResumeFile(f[0]); }, []);
   const resumeDropzone = useDropzone({ onDrop: onResumeDrop, accept: { 'application/pdf': ['.pdf'] }, maxSize: 5 * 1024 * 1024, maxFiles: 1 });
@@ -97,9 +100,11 @@ export default function ScanPage() {
 
       const timeoutChecker = setInterval(() => {
         const elapsed = (Date.now() - scanStartRef.current) / 1000;
-        if (elapsed > 90) {
-          setTimeoutMsg('Taking longer than expected. Please wait...');
-        } else if (elapsed > 45) {
+        if (elapsed > 120) {
+          setTimeoutMsg('This is taking unusually long. The analysis is still running — please don\'t close this page.');
+        } else if (elapsed > 60) {
+          setTimeoutMsg('This is taking longer than usual. The analysis is still running...');
+        } else if (elapsed > 30) {
           setTimeoutMsg('Still working — analyzing GitHub repositories takes a moment for larger profiles.');
         }
       }, 5000);
@@ -133,12 +138,34 @@ export default function ScanPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    setPdfGenerating(true);
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF } = await import('jspdf');
+      const el = resultRef.current;
+      if (!el) { window.print(); return; }
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false, backgroundColor: '#f8fafc' });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      pdf.save(`CareerLens-${result?.target_role?.replace(/\s+/g, '-') || 'analysis'}-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch {
+      window.print();
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
   const scoreColor = (s: number) => s >= 60 ? 'text-emerald-600' : s >= 35 ? 'text-amber-600' : 'text-red-600';
 
   // ── Results ──
   if (result) {
     return (
-      <div>
+      <div ref={resultRef}>
         <div className="flex items-start gap-3 mb-6">
           <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
             <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -149,8 +176,20 @@ export default function ScanPage() {
           </div>
         </div>
 
+        {/* Edge case notes */}
+        {result.notes && result.notes.length > 0 && (
+          <div className="space-y-2 mb-6">
+            {result.notes.map((note: string, i: number) => (
+              <div key={i} className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">{note}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Score Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
           <Card size="sm">
             <CardContent className="pt-4 pb-4 text-center">
               <p className={`text-3xl font-bold ${scoreColor(result.overall_score)}`}>{result.overall_score}%</p>
@@ -206,36 +245,96 @@ export default function ScanPage() {
         )}
 
         {/* Evidence Matrix */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold mb-2">Evidence Matrix</h3>
-          <Card>
+        <div className="mb-8">
+          <h3 className="text-base font-semibold mb-3">Evidence Matrix</h3>
+          <Card className="rounded-2xl border-slate-200 shadow-md overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b bg-muted/50">
-                  <tr>
-                    <th className="text-left p-2.5 font-medium text-xs">Skill</th>
-                    <th className="text-center p-2.5 font-medium text-xs hidden sm:table-cell">Importance</th>
-                    <th className="text-center p-2.5 font-medium text-xs">R</th>
-                    <th className="text-center p-2.5 font-medium text-xs">L</th>
-                    <th className="text-center p-2.5 font-medium text-xs">G</th>
-                    <th className="text-center p-2.5 font-medium text-xs">Score</th>
-                    <th className="text-center p-2.5 font-medium text-xs hidden sm:table-cell">Status</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 border-b border-slate-200">
+                    <th className="text-left px-4 py-3.5 font-semibold text-sm text-slate-700">Skill</th>
+                    <th className="text-center px-3 py-3.5 font-semibold text-sm text-slate-700 hidden sm:table-cell">Level</th>
+                    <th className="text-center px-3 py-3.5 w-14">
+                      <Tooltip><TooltipTrigger className="flex flex-col items-center gap-0.5 mx-auto">
+                        <FileText className="w-4 h-4 text-blue-500" />
+                        <span className="text-[10px] font-medium text-slate-500">Resume</span>
+                      </TooltipTrigger><TooltipContent side="top" className="text-xs">Found on Resume</TooltipContent></Tooltip>
+                    </th>
+                    <th className="text-center px-3 py-3.5 w-14">
+                      <Tooltip><TooltipTrigger className="flex flex-col items-center gap-0.5 mx-auto">
+                        <FaLinkedin className="w-4 h-4 text-[#0A66C2]" />
+                        <span className="text-[10px] font-medium text-slate-500">LinkedIn</span>
+                      </TooltipTrigger><TooltipContent side="top" className="text-xs">Found on LinkedIn</TooltipContent></Tooltip>
+                    </th>
+                    <th className="text-center px-3 py-3.5 w-14">
+                      <Tooltip><TooltipTrigger className="flex flex-col items-center gap-0.5 mx-auto">
+                        <FaGithub className="w-4 h-4 text-slate-700" />
+                        <span className="text-[10px] font-medium text-slate-500">GitHub</span>
+                      </TooltipTrigger><TooltipContent side="top" className="text-xs">Found on GitHub</TooltipContent></Tooltip>
+                    </th>
+                    <th className="text-center px-3 py-3.5 font-semibold text-sm text-slate-700 w-20">Score</th>
+                    <th className="text-center px-3 py-3.5 font-semibold text-sm text-slate-700 hidden sm:table-cell w-28">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {result.evidence_matrix.map((e: any, i: number) => (
-                    <tr key={i} className="border-b last:border-0">
-                      <td className="p-2.5 font-medium text-xs">{e.skill_name}</td>
-                      <td className="p-2.5 text-center hidden sm:table-cell">
-                        <Badge variant={e.importance === 'critical' ? 'destructive' : e.importance === 'important' ? 'default' : 'secondary'} className="text-[10px]">{e.importance}</Badge>
-                      </td>
-                      <td className="p-2.5 text-center text-xs">{e.cross_reference.resume ? '\u2705' : '\u274C'}</td>
-                      <td className="p-2.5 text-center text-xs">{e.cross_reference.linkedin ? '\u2705' : '\u274C'}</td>
-                      <td className="p-2.5 text-center text-xs">{e.cross_reference.github ? '\u2705' : '\u274C'}</td>
-                      <td className={`p-2.5 text-center font-bold text-xs ${scoreColor(e.evidence_score)}`}>{e.evidence_score}</td>
-                      <td className="p-2.5 text-center text-[10px] hidden sm:table-cell">{e.cross_reference.label}</td>
-                    </tr>
-                  ))}
+                  {result.evidence_matrix.map((e: any, i: number) => {
+                    const score = e.evidence_score ?? 0;
+                    return (
+                      <tr key={i} className={`border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50/60 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                        <td className="px-4 py-3 font-medium text-sm text-slate-800">{e.skill_name}</td>
+                        <td className="px-3 py-3 text-center hidden sm:table-cell">
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
+                            e.importance === 'critical'
+                              ? 'bg-red-50 text-red-600 border-red-200'
+                              : e.importance === 'important'
+                                ? 'bg-blue-50 text-blue-600 border-blue-200'
+                                : 'bg-slate-50 text-slate-500 border-slate-200'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              e.importance === 'critical' ? 'bg-red-500' : e.importance === 'important' ? 'bg-blue-500' : 'bg-slate-400'
+                            }`} />
+                            {e.importance === 'nice_to_have' ? 'nice' : e.importance}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <div className={`w-7 h-7 rounded-lg mx-auto flex items-center justify-center ${e.cross_reference.resume ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-100'}`}>
+                            {e.cross_reference.resume
+                              ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                              : <X className="w-3.5 h-3.5 text-slate-300" />}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <div className={`w-7 h-7 rounded-lg mx-auto flex items-center justify-center ${e.cross_reference.linkedin ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-100'}`}>
+                            {e.cross_reference.linkedin
+                              ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                              : <X className="w-3.5 h-3.5 text-slate-300" />}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <div className={`w-7 h-7 rounded-lg mx-auto flex items-center justify-center ${e.cross_reference.github ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-100'}`}>
+                            {e.cross_reference.github
+                              ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                              : <X className="w-3.5 h-3.5 text-slate-300" />}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl text-sm font-bold ring-1 ${
+                            score >= 60 ? 'ring-emerald-200 bg-emerald-50 text-emerald-600'
+                              : score >= 35 ? 'ring-amber-200 bg-amber-50 text-amber-600'
+                              : 'ring-red-200 bg-red-50 text-red-500'
+                          }`}>{score}</span>
+                        </td>
+                        <td className="px-3 py-3 text-center hidden sm:table-cell">
+                          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${
+                            e.cross_reference.label === 'Fully Verified' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            e.cross_reference.label === 'Underreported' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            e.cross_reference.label === 'Undiscovered' ? 'bg-slate-100 text-slate-600 border-slate-200' :
+                            'bg-slate-50 text-slate-500 border-slate-200'
+                          }`}>{e.cross_reference.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -244,24 +343,47 @@ export default function ScanPage() {
 
         {/* Projects */}
         {result.project_recommendations.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold mb-2">Recommended Projects</h3>
-            <div className="space-y-3">
+          <div className="mb-8">
+            <h3 className="text-base font-semibold mb-3">Recommended Projects</h3>
+            <div className="space-y-4">
               {result.project_recommendations.map((p: any, i: number) => (
-                <Card key={i} size="sm">
-                  <CardHeader className="pb-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-sm">{p.title}</CardTitle>
-                      <Badge variant="outline" className="text-[10px] flex-shrink-0">{p.difficulty} &middot; ~{p.estimated_hours}h</Badge>
+                <Card key={i} className="rounded-2xl border-slate-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className={`h-1 ${i === 0 ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-gradient-to-r from-slate-200 to-slate-100'}`} />
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${i === 0 ? 'bg-indigo-50' : 'bg-slate-100'}`}>
+                          {i === 0 ? <Sparkles className="w-4 h-4 text-indigo-600" /> : <span className="text-xs font-bold text-slate-500">{i + 1}</span>}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-semibold text-slate-900">{p.title}</h4>
+                            {i === 0 && <span className="text-[10px] font-semibold bg-indigo-600 text-white px-2 py-0.5 rounded-full">Recommended</span>}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{p.description}</p>
+                        </div>
+                      </div>
                     </div>
-                    <CardDescription className="text-xs">{p.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {p.tech_stack.map((t: string) => (<Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>))}
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                        p.difficulty === 'beginner' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        p.difficulty === 'intermediate' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        'bg-red-50 text-red-700 border-red-200'
+                      }`}>{p.difficulty}</span>
+                      <span className="text-xs text-slate-400">~{p.estimated_hours}h</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mb-1">Covers: {p.skills_covered.join(', ')}</p>
-                    <p className="text-[11px] text-emerald-700 bg-emerald-50 p-2 rounded">{p.evidence_impact}</p>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {p.tech_stack.map((t: string) => (
+                        <span key={t} className="text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-1 rounded-lg border border-slate-200">{t}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400 mb-3">Covers: {p.skills_covered.join(', ')}</p>
+                    {p.evidence_impact && (
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80">
+                        <ArrowRight className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-emerald-700 font-medium">{p.evidence_impact}</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -271,14 +393,15 @@ export default function ScanPage() {
 
         {/* Quick Wins */}
         {result.quick_wins.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold mb-2">Quick Wins</h3>
-            <Card size="sm" className="bg-emerald-50/50">
-              <CardContent className="pt-3">
-                <ul className="space-y-1.5">
+          <div className="mb-8">
+            <h3 className="text-base font-semibold mb-3">Quick Wins</h3>
+            <Card className="rounded-2xl border-slate-200 shadow-md">
+              <CardContent className="p-5">
+                <ul className="space-y-2.5">
                   {result.quick_wins.map((w: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-xs">
-                      <CheckCircle className="w-3.5 h-3.5 mt-0.5 text-emerald-600 flex-shrink-0" /> {w}
+                    <li key={i} className="flex items-start gap-3 text-sm">
+                      <CheckCircle className="w-4 h-4 mt-0.5 text-emerald-500 flex-shrink-0" />
+                      <span className="text-slate-700">{w}</span>
                     </li>
                   ))}
                 </ul>
@@ -288,9 +411,11 @@ export default function ScanPage() {
         )}
 
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button onClick={() => router.push(`/dashboard/scan/${result.scan_id}`)} className="gap-2"><Sparkles className="w-3.5 h-3.5" /> View Full Analysis</Button>
-          <Button variant="outline" onClick={() => { setResult(null); setCurrentStep(0); }} className="gap-2"><RotateCcw className="w-3.5 h-3.5" /> New Scan</Button>
-          <Button variant="outline" onClick={() => router.push('/dashboard')} className="gap-2"><ArrowLeft className="w-3.5 h-3.5" /> Dashboard</Button>
+          <Button onClick={() => router.push('/dashboard')} className="gap-2"><Sparkles className="w-3.5 h-3.5" />View Dashboard</Button>
+          <Button variant="outline" onClick={handleDownloadPdf} disabled={pdfGenerating} className="gap-2">
+            {pdfGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowLeft className="w-3.5 h-3.5" />}
+            {pdfGenerating ? 'Generating...' : 'Download as PDF'}
+          </Button>
         </div>
       </div>
     );

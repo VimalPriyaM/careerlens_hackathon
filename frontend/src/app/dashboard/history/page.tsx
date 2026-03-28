@@ -72,7 +72,7 @@ export default function HistoryPage() {
             return (
               <Link key={scan.id} href={`/dashboard/scan/${scan.id}`}>
                 <Card size="sm" className="hover:bg-muted/30 transition-colors cursor-pointer">
-                  <CardContent className="py-3 flex items-center gap-4">
+                  <CardContent className="py-3 flex items-center gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{scan.target_role}</p>
                       <p className="text-[11px] text-muted-foreground">

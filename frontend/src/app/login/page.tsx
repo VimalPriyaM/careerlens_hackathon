@@ -39,7 +39,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`,
       },
     });
     if (error) setError(error.message);
@@ -48,7 +48,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <Link href="/" className="text-base font-semibold tracking-tight mb-8">CareerLens AI</Link>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-[calc(100vw-2rem)] sm:max-w-sm">
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-lg">Welcome back</CardTitle>
           <CardDescription className="text-xs">Sign in to continue your analysis</CardDescription>

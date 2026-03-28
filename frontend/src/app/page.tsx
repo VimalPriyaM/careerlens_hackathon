@@ -25,15 +25,15 @@ export default function LandingPage() {
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
             Prove It or Build It
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto mb-8 leading-relaxed">
+          <p className="text-muted-foreground text-sm sm:text-base max-w-xs sm:max-w-md mx-auto mb-8 leading-relaxed">
             Cross-reference your Resume, LinkedIn, and GitHub against any target role.
             Get evidence-backed skill scores and a roadmap to close the gaps.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/signup" className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground font-medium px-6 py-2.5 text-sm hover:bg-primary/90 transition-colors">
+            <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground font-medium px-6 py-3 text-sm hover:bg-primary/90 transition-colors">
               Start Free Analysis
             </Link>
-            <Link href="/login" className="inline-flex items-center justify-center rounded-md border font-medium px-6 py-2.5 text-sm hover:bg-secondary transition-colors">
+            <Link href="/login" className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border font-medium px-6 py-3 text-sm hover:bg-secondary transition-colors">
               I have an account
             </Link>
           </div>

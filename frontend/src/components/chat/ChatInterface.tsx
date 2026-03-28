@@ -18,33 +18,27 @@ interface ChatInterfaceProps {
   sessionId: string | null;
   scanId: string | null;
   onSessionCreated: (sessionId: string) => void;
+  bulletGenerator?: React.ReactNode;
 }
 
 const QUICK_ACTIONS = [
-  'Which project should I build first?',
-  "What's my biggest weakness?",
-  'Is my GitHub strong enough?',
-  'Write me a resume bullet',
+  'Build first project?',
+  'Biggest weakness?',
+  'GitHub strong enough?',
+  'Resume bullet',
 ];
 
-/* ---------- lightweight markdown ---------- */
 function renderMarkdown(text: string): string {
   let html = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  // code blocks (```)
-  html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-100 rounded p-2 my-1 text-xs overflow-x-auto"><code>$1</code></pre>');
-  // inline code
-  html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-100 px-1 py-0.5 rounded text-xs">$1</code>');
-  // bold
+  html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-100 rounded-lg p-3 my-2 text-xs overflow-x-auto"><code>$1</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">$1</code>');
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // newlines
   html = html.replace(/\n/g, '<br/>');
   return html;
 }
-
-/* ---------- sub-components ---------- */
 
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === 'user';
@@ -53,19 +47,19 @@ function MessageBubble({ message }: { message: Message }) {
       <div
         className={
           isUser
-            ? 'bg-slate-800 text-white rounded-2xl rounded-br-md px-4 py-2 max-w-[75%]'
-            : 'bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-2 max-w-[85%]'
+            ? 'bg-slate-800 text-white rounded-2xl rounded-br-sm px-3 sm:px-4 py-2.5 max-w-[82%] sm:max-w-[70%]'
+            : 'bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-3 sm:px-4 py-2.5 max-w-[90%] sm:max-w-[80%]'
         }
       >
         {isUser ? (
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
         ) : (
           <div
-            className="text-sm prose-sm"
+            className="text-sm leading-relaxed break-words [&_pre]:max-w-full [&_pre]:overflow-x-auto"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
           />
         )}
-        <p className="text-xs text-slate-400 mt-1">
+        <p className={`text-[10px] mt-1 ${isUser ? 'text-white/50' : 'text-slate-400'}`}>
           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
@@ -76,36 +70,18 @@ function MessageBubble({ message }: { message: Message }) {
 function TypingIndicator() {
   return (
     <div className="flex justify-start mb-3">
-      <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3">
+      <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3">
         <div className="flex gap-1">
-          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+          <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
       </div>
     </div>
   );
 }
 
-function QuickActions({ onSelect }: { onSelect: (text: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2 mb-3">
-      {QUICK_ACTIONS.map((q) => (
-        <button
-          key={q}
-          onClick={() => onSelect(q)}
-          className="bg-slate-100 hover:bg-slate-200 text-sm text-slate-600 rounded-full px-4 py-1.5 transition-colors"
-        >
-          {q}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ---------- main component ---------- */
-
-export function ChatInterface({ sessionId, scanId, onSessionCreated }: ChatInterfaceProps) {
+export function ChatInterface({ sessionId, scanId, onSessionCreated, bulletGenerator }: ChatInterfaceProps) {
   const supabase = createClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -114,17 +90,10 @@ export function ChatInterface({ sessionId, scanId, onSessionCreated }: ChatInter
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // sync prop changes
-  useEffect(() => {
-    setCurrentSessionId(sessionId);
-  }, [sessionId]);
+  useEffect(() => { setCurrentSessionId(sessionId); }, [sessionId]);
 
-  // load messages when session changes
   useEffect(() => {
-    if (!currentSessionId) {
-      setMessages([]);
-      return;
-    }
+    if (!currentSessionId) { setMessages([]); return; }
     let cancelled = false;
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -136,15 +105,12 @@ export function ChatInterface({ sessionId, scanId, onSessionCreated }: ChatInter
         if (!res.ok) return;
         const { messages: msgs } = await res.json();
         if (!cancelled) setMessages(msgs || []);
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     };
     load();
     return () => { cancelled = true; };
   }, [currentSessionId, supabase]);
 
-  // auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
@@ -156,10 +122,7 @@ export function ChatInterface({ sessionId, scanId, onSessionCreated }: ChatInter
     setSending(true);
 
     const tempUserMsg: Message = {
-      id: `temp-${Date.now()}`,
-      role: 'user',
-      content: trimmed,
-      created_at: new Date().toISOString(),
+      id: `temp-${Date.now()}`, role: 'user', content: trimmed, created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMsg]);
 
@@ -173,10 +136,7 @@ export function ChatInterface({ sessionId, scanId, onSessionCreated }: ChatInter
 
       const res = await fetch(`${API_URL}/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify(body),
       });
 
@@ -186,80 +146,91 @@ export function ChatInterface({ sessionId, scanId, onSessionCreated }: ChatInter
       }
 
       const data = await res.json();
-
       if (!currentSessionId && data.session_id) {
         setCurrentSessionId(data.session_id);
         onSessionCreated(data.session_id);
       }
 
-      const assistantMsg: Message = {
-        id: `resp-${Date.now()}`,
-        role: 'assistant',
-        content: data.reply,
+      setMessages((prev) => [...prev, {
+        id: `resp-${Date.now()}`, role: 'assistant', content: data.reply,
         created_at: data.created_at || new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      }]);
     } catch (err: any) {
-      const errMsg: Message = {
-        id: `err-${Date.now()}`,
-        role: 'assistant',
+      setMessages((prev) => [...prev, {
+        id: `err-${Date.now()}`, role: 'assistant',
         content: `Sorry, something went wrong: ${err.message}`,
         created_at: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
+      }]);
     } finally {
       setSending(false);
     }
   }, [sending, currentSessionId, scanId, supabase, onSessionCreated]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage(input);
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
   };
+
+  const hasMessages = messages.length > 0;
 
   return (
     <div className="flex flex-col h-full">
-      {/* message list */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        {messages.length === 0 && !sending && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <p className="text-sm text-slate-500 mb-6">Start a conversation about your career profile.</p>
-            <QuickActions onSelect={sendMessage} />
+      {/* Scrollable area */}
+      <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3">
+        {/* Empty state */}
+        {!hasMessages && !sending && (
+          <div className="flex flex-col h-full">
+            {/* Bullet generator at top of empty state */}
+            {bulletGenerator && <div className="mb-3">{bulletGenerator}</div>}
+
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-2 pb-4">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
+                <Send className="w-4 h-4 text-slate-500" />
+              </div>
+              <p className="text-sm text-slate-500 mb-5">Ask anything about your career profile</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {QUICK_ACTIONS.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => sendMessage(q)}
+                    className="bg-slate-100 hover:bg-slate-200 text-xs text-slate-600 rounded-full px-3.5 py-2 transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
-        {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
-        ))}
-        {sending && <TypingIndicator />}
+
+        {/* Messages */}
+        {hasMessages && (
+          <>
+            {messages.map((m) => (
+              <MessageBubble key={m.id} message={m} />
+            ))}
+            {sending && <TypingIndicator />}
+          </>
+        )}
         <div ref={bottomRef} />
       </div>
 
-      {/* quick actions when messages exist */}
-      {messages.length > 0 && !sending && (
-        <div className="px-4">
-          <QuickActions onSelect={sendMessage} />
-        </div>
-      )}
-
-      {/* input area */}
-      <div className="border-t border-slate-200 p-4">
-        <div className="relative flex items-end">
+      {/* Input area — always at bottom */}
+      <div className="border-t border-slate-200 bg-white p-2.5 sm:p-3">
+        <div className="relative flex items-end max-w-3xl mx-auto">
           <textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything about your profile..."
+            placeholder="Ask anything..."
             disabled={sending}
             rows={1}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 pr-11 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50 min-h-[44px]"
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={sending || !input.trim()}
-            className="absolute right-2 bottom-2 p-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="absolute right-1.5 bottom-1.5 p-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>

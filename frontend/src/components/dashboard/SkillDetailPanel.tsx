@@ -25,20 +25,20 @@ function Bar({ label, score, max, details }: { label: string; score: number; max
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-0.5">
-        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-xs text-slate-500 flex items-center gap-1">
           {label}
           <Tooltip>
-            <TooltipTrigger><Info className="w-2.5 h-2.5 opacity-30" /></TooltipTrigger>
+            <TooltipTrigger><Info className="w-2.5 h-2.5 text-slate-300" /></TooltipTrigger>
             <TooltipContent side="top" className="max-w-[180px] text-xs">{tips[label] || label}</TooltipContent>
           </Tooltip>
         </span>
-        <span className="text-[11px] font-semibold tabular-nums">{score}<span className="font-normal text-muted-foreground">/{max}</span></span>
+        <span className="text-xs font-semibold tabular-nums text-slate-700">{score}<span className="font-normal text-slate-400">/{max}</span></span>
       </div>
       <div className={`h-1.5 rounded-full overflow-hidden ${track}`}>
-        <div className={`h-full rounded-full ${fill}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full transition-all duration-500 ${fill}`} style={{ width: `${pct}%` }} />
       </div>
-      {details && <p className="text-[10px] text-muted-foreground mt-0.5">{details}</p>}
+      {details && <p className="text-[11px] text-slate-400 mt-0.5">{details}</p>}
     </div>
   );
 }
@@ -60,11 +60,11 @@ export function SkillDetailPanel({ entry }: SkillDetailPanelProps) {
 
   return (
     <TooltipProvider>
-      <div className="bg-muted/10 border-t">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+      <div className="bg-slate-50/70">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5">
           {/* Left: Score Breakdown */}
-          <div className="space-y-2.5">
-            <p className="text-xs font-semibold">Score Breakdown</p>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-slate-900">Score Breakdown</p>
             <Bar label="GitHub Language" score={gl.score} max={gl.max || 25} details={gl.details} />
             <Bar label="GitHub Structure" score={gs.score} max={gs.max || 20} details={gs.details} />
             <Bar label="Code Quality" score={gc.score} max={gc.max || 20} details={gc.details} />
@@ -74,27 +74,25 @@ export function SkillDetailPanel({ entry }: SkillDetailPanelProps) {
 
           {/* Right: Source Map */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold">Source Map</p>
+            <p className="text-sm font-semibold text-slate-900">Source Map</p>
 
-            {/* Visual source indicators */}
             <div className="grid grid-cols-3 gap-2">
-              <SourceCard icon={<FileText className="w-3.5 h-3.5" />} label="Resume" found={!!xref.resume} color="blue" />
-              <SourceCard icon={<FaLinkedin className="w-3.5 h-3.5" />} label="LinkedIn" found={!!xref.linkedin} color="sky" />
-              <SourceCard icon={<FaGithub className="w-3.5 h-3.5" />} label="GitHub" found={!!xref.github} color="gray" />
+              <SourceCard icon={<FileText className="w-3.5 h-3.5" />} label="Resume" found={!!xref.resume} />
+              <SourceCard icon={<FaLinkedin className="w-3.5 h-3.5" />} label="LinkedIn" found={!!xref.linkedin} />
+              <SourceCard icon={<FaGithub className="w-3.5 h-3.5" />} label="GitHub" found={!!xref.github} />
             </div>
 
-            {/* Status */}
             {xref.label && (
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px]">{xref.label}</Badge>
               </div>
             )}
 
-            {xref.description && <p className="text-[11px] text-muted-foreground leading-relaxed">{xref.description}</p>}
+            {xref.description && <p className="text-xs text-slate-500 leading-relaxed">{xref.description}</p>}
 
             {xref.action && (
-              <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
-                <p className="text-[11px] text-blue-800"><span className="font-semibold">Action:</span> {xref.action}</p>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-xs text-slate-800"><span className="font-semibold">Action:</span> {xref.action}</p>
               </div>
             )}
           </div>
@@ -104,16 +102,16 @@ export function SkillDetailPanel({ entry }: SkillDetailPanelProps) {
   );
 }
 
-function SourceCard({ icon, label, found }: { icon: React.ReactNode; label: string; found: boolean; color: string }) {
+function SourceCard({ icon, label, found }: { icon: React.ReactNode; label: string; found: boolean }) {
   return (
-    <div className={`rounded-lg border p-2.5 text-center ${found ? 'bg-emerald-50/50 border-emerald-200' : 'bg-muted/20 border-border'}`}>
-      <div className={`mx-auto mb-1 w-7 h-7 rounded-full flex items-center justify-center ${found ? 'bg-emerald-100' : 'bg-muted'}`}>
-        <span className={found ? 'text-emerald-600' : 'text-muted-foreground/30'}>{icon}</span>
+    <div className={`rounded-xl border p-3 text-center transition-shadow ${found ? 'bg-emerald-50/60 border-emerald-200 shadow-sm' : 'bg-slate-50 border-slate-200'}`}>
+      <div className={`mx-auto mb-1.5 w-8 h-8 rounded-full flex items-center justify-center ${found ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+        <span className={found ? 'text-emerald-600' : 'text-slate-300'}>{icon}</span>
       </div>
-      <p className={`text-[10px] font-medium ${found ? '' : 'text-muted-foreground/50'}`}>{label}</p>
+      <p className={`text-[11px] font-medium ${found ? 'text-slate-700' : 'text-slate-400'}`}>{label}</p>
       {found
-        ? <CheckCircle className="w-3 h-3 text-emerald-500 mx-auto mt-1" />
-        : <XCircle className="w-3 h-3 text-muted-foreground/20 mx-auto mt-1" />}
+        ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500 mx-auto mt-1" />
+        : <XCircle className="w-3.5 h-3.5 text-slate-300 mx-auto mt-1" />}
     </div>
   );
 }

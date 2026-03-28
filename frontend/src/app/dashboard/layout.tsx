@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { useProfileStore } from '@/store/useProfileStore';
-import { Button } from '@/components/ui/button';
+import {
+  SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarGroup,
+  SidebarItem, SidebarFooter, SidebarToggle, SidebarTopBar,
+  SidebarMobileOverlay, SidebarMobile, useSidebar,
+} from '@/components/ui/sidebar';
 import {
   LayoutDashboard, ScanSearch, History, MessageSquare,
-  LogOut, Menu, X, PanelLeftClose, PanelLeft,
+  LogOut, Menu, X,
 } from 'lucide-react';
 
 const navItems = [
@@ -18,13 +21,12 @@ const navItems = [
   { href: '/dashboard/chat', label: 'AI Co-pilot', icon: MessageSquare },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
   const { user, setUser, setLoading } = useProfileStore();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
 
   useEffect(() => {
     const getUser = async () => {
@@ -41,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     getUser();
   }, [supabase, setUser, setLoading]);
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => { setMobileOpen(false); }, [pathname, setMobileOpen]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -55,111 +57,111 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return pathname.startsWith(href);
   };
 
-  return (
-    <div className="min-h-screen flex bg-background">
-      {/* Desktop sidebar */}
-      <aside className={`hidden md:flex flex-col border-r bg-card flex-shrink-0 transition-all duration-200 ${collapsed ? 'w-14' : 'w-56'}`}>
-        {/* Brand */}
-        <div className={`border-b flex items-center ${collapsed ? 'justify-center p-3' : 'p-4 justify-between'}`}>
-          {!collapsed && (
-            <Link href="/dashboard" className="block min-w-0">
-              <span className="text-sm font-semibold tracking-tight">CareerLens AI</span>
-              <p className="text-[10px] text-muted-foreground">Prove It or Build It</p>
-            </Link>
-          )}
-          <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded-md hover:bg-secondary transition-colors flex-shrink-0">
-            {collapsed ? <PanelLeft className="w-4 h-4 text-muted-foreground" /> : <PanelLeftClose className="w-4 h-4 text-muted-foreground" />}
-          </button>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 p-2 space-y-0.5">
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${collapsed ? 'justify-center' : ''} ${
-                  active ? 'bg-secondary text-foreground font-medium' : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-                }`}
-              >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                {!collapsed && item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User */}
-        <div className={`border-t ${collapsed ? 'p-2' : 'p-3'}`}>
-          {user && !collapsed && (
-            <div className="mb-2 px-2">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+  const sidebarNav = (
+    <>
+      <SidebarHeader>
+        {!collapsed && (
+          <a href="/dashboard" className="flex items-center gap-2 no-underline">
+            <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">C</span>
             </div>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`w-full text-muted-foreground hover:text-destructive ${collapsed ? 'justify-center px-0' : 'justify-start'}`}
-            onClick={handleLogout}
-            title="Log out"
-          >
-            <LogOut className="w-4 h-4" />
-            {!collapsed && <span className="ml-2">Log out</span>}
-          </Button>
-        </div>
-      </aside>
+            <span className="text-[15px] font-bold tracking-tight text-slate-900">CareerLens</span>
+          </a>
+        )}
+        {collapsed && (
+          <a href="/dashboard" className="mx-auto no-underline">
+            <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">C</span>
+            </div>
+          </a>
+        )}
+      </SidebarHeader>
 
-      {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-12 border-b bg-card flex items-center justify-between px-3">
+      <SidebarContent>
+        <SidebarGroup label="Menu">
+          {navItems.map(item => (
+            <SidebarItem
+              key={item.href}
+              icon={item.icon}
+              label={item.label}
+              href={item.href}
+              active={isActive(item.href)}
+            />
+          ))}
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarToggle />
+
+      <SidebarFooter>
+        {user && !collapsed && (
+          <div className="mb-2 px-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center flex-shrink-0">
+                <span className="text-[11px] font-semibold text-white">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-slate-900 truncate">{user.name}</p>
+                <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        {user && collapsed && (
+          <div className="flex justify-center mb-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+              <span className="text-[11px] font-semibold text-white">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+            </div>
+          </div>
+        )}
+        <SidebarItem
+          icon={LogOut}
+          label="Log out"
+          onClick={handleLogout}
+          className="text-slate-400 hover:!bg-red-50 hover:!text-red-600"
+        />
+      </SidebarFooter>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex bg-slate-50/60">
+      {/* Desktop sidebar */}
+      <Sidebar>{sidebarNav}</Sidebar>
+
+      {/* Mobile top bar */}
+      <SidebarTopBar>
         <div className="flex items-center gap-3">
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1.5 rounded-md hover:bg-secondary transition-colors">
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+            {mobileOpen ? <X className="w-5 h-5 text-slate-700" /> : <Menu className="w-5 h-5 text-slate-700" />}
           </button>
-          <span className="text-sm font-semibold tracking-tight">CareerLens AI</span>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-slate-900 flex items-center justify-center">
+              <span className="text-white text-[10px] font-bold">C</span>
+            </div>
+            <span className="text-sm font-bold tracking-tight text-slate-900">CareerLens</span>
+          </div>
         </div>
-      </div>
+      </SidebarTopBar>
 
       {/* Mobile sidebar */}
-      {mobileOpen && (
-        <>
-          <div className="md:hidden fixed inset-0 z-40 bg-black/20" onClick={() => setMobileOpen(false)} />
-          <aside className="md:hidden fixed top-12 left-0 bottom-0 z-50 w-56 flex flex-col border-r bg-card">
-            <nav className="flex-1 p-2 space-y-0.5">
-              {navItems.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <Link key={item.href} href={item.href}
-                    className={`flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${active ? 'bg-secondary text-foreground font-medium' : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'}`}>
-                    <item.icon className="w-4 h-4 flex-shrink-0" /> {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-            <div className="p-3 border-t">
-              {user && (
-                <div className="mb-2 px-2">
-                  <p className="text-sm font-medium truncate">{user.name}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-                </div>
-              )}
-              <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-destructive" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" /> Log out
-              </Button>
-            </div>
-          </aside>
-        </>
-      )}
+      <SidebarMobileOverlay />
+      <SidebarMobile>{sidebarNav}</SidebarMobile>
 
       {/* Main content */}
       <main className="flex-1 min-w-0 overflow-auto">
-        <div className="md:p-6 p-4 pt-16 md:pt-6 max-w-5xl mx-auto">
+        <div className="p-3 pt-16 sm:p-4 sm:pt-18 md:p-8 md:pt-8 max-w-6xl mx-auto">
           {children}
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </SidebarProvider>
   );
 }

@@ -133,6 +133,29 @@ router.post('/scan', authMiddleware, (req: AuthenticatedRequest, res: Response, 
       const github = (githubResult as PromiseFulfilledResult<any>).value;
       const targetSkills = (targetRoleResult as PromiseFulfilledResult<any>).value;
 
+      // ── Edge case notes ──
+      const notes: string[] = [];
+
+      // Edge case 1: Zero public repos
+      if (!github.repos || github.repos.length === 0) {
+        notes.push('No public GitHub repositories found. Evidence scores rely on resume and LinkedIn only.');
+      }
+
+      // Edge case 2: Very few resume skills
+      const resumeSkillCount = (resume.skills || []).length;
+      if (resumeSkillCount <= 2) {
+        notes.push(`Resume appears thin — only ${resumeSkillCount} skill${resumeSkillCount === 1 ? '' : 's'} detected. Consider adding more detail to your resume for better analysis.`);
+      }
+
+      // Edge case 3: LinkedIn PDF with very sparse data
+      const linkedinSkillCount = (linkedin.skills || []).length;
+      const linkedinExpCount = (linkedin.experience || []).length;
+      if (linkedinSkillCount === 0 && linkedinExpCount === 0) {
+        notes.push('LinkedIn data appears very sparse — no skills or experience found. This may not be a valid LinkedIn PDF export. Go to LinkedIn → Profile → More → Save to PDF.');
+      } else if (linkedinSkillCount <= 1 && linkedinExpCount <= 1) {
+        notes.push('LinkedIn profile has minimal data. Ensure you uploaded a LinkedIn PDF export (Profile → More → Save to PDF) for best results.');
+      }
+
       // ── PHASE 2: Evidence Scoring ──
       const reposForScoring = github.repos.map((r: any) => ({
         name: r.name,
@@ -250,6 +273,7 @@ router.post('/scan', authMiddleware, (req: AuthenticatedRequest, res: Response, 
         total_target_skills: evidenceResult.total_target_skills,
         overall_readiness_percentage: gapAnalysis.overall_readiness_percentage,
         projected_readiness: gapAnalysis.projected_readiness_after_projects,
+        notes,
       };
 
       const { error: insertError } = await supabaseAdmin
@@ -283,6 +307,7 @@ router.post('/scan', authMiddleware, (req: AuthenticatedRequest, res: Response, 
         },
         gap_summary: gapAnalysis.gap_summary,
         quick_wins: gapAnalysis.quick_wins,
+        notes,
         created_at: new Date().toISOString(),
       });
     } catch (error: any) {

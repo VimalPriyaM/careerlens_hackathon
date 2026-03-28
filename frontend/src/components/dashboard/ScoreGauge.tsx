@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface ScoreGaugeProps {
@@ -31,38 +30,70 @@ export function ScoreGauge({ score, verified, total }: ScoreGaugeProps) {
   }, [score]);
 
   const color = score >= 60 ? '#10b981' : score >= 35 ? '#f59e0b' : '#ef4444';
+  const label = score >= 60 ? 'Strong' : score >= 35 ? 'Moderate' : 'Needs Work';
+  const labelBg = score >= 60 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : score >= 35 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-red-50 text-red-700 border-red-200';
 
-  const data = [
-    { name: 'score', value: displayed, fill: color },
-  ];
+  // SVG arc gauge
+  const size = 160;
+  const strokeWidth = 14;
+  const radius = (size - strokeWidth) / 2;
+  const center = size / 2;
+  // Arc from 135deg to 405deg (270deg sweep)
+  const startAngle = 135;
+  const endAngle = 405;
+  const sweepAngle = endAngle - startAngle; // 270
+  const scoreAngle = startAngle + (displayed / 100) * sweepAngle;
+
+  const polarToCartesian = (angle: number) => {
+    const rad = (angle * Math.PI) / 180;
+    return {
+      x: center + radius * Math.cos(rad),
+      y: center + radius * Math.sin(rad),
+    };
+  };
+
+  const describeArc = (start: number, end: number) => {
+    const s = polarToCartesian(start);
+    const e = polarToCartesian(end);
+    const largeArc = end - start > 180 ? 1 : 0;
+    return `M ${s.x} ${s.y} A ${radius} ${radius} 0 ${largeArc} 1 ${e.x} ${e.y}`;
+  };
 
   return (
-    <Card>
-      <CardContent className="pt-4 pb-3 flex flex-col items-center">
-        <div className="relative w-32 h-32">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadialBarChart
-              innerRadius="75%"
-              outerRadius="100%"
-              data={data}
-              startAngle={210}
-              endAngle={-30}
-              barSize={10}
-            >
-              <RadialBar
-                dataKey="value"
-                cornerRadius={5}
-                background={{ fill: '#f1f5f9' }}
+    <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+      <CardContent className="pt-5 pb-4 flex flex-col items-center">
+        <div className="relative" style={{ width: size, height: size }}>
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            {/* Background track */}
+            <path
+              d={describeArc(startAngle, endAngle)}
+              fill="none"
+              stroke="#e2e8f0"
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+            />
+            {/* Score arc */}
+            {displayed > 0 && (
+              <path
+                d={describeArc(startAngle, scoreAngle)}
+                fill="none"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
               />
-            </RadialBarChart>
-          </ResponsiveContainer>
+            )}
+          </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold" style={{ color }}>{displayed}</span>
-            <span className="text-[10px] text-muted-foreground">out of 100</span>
+            <span className="text-4xl font-bold text-slate-900">{displayed}</span>
+            <span className="text-xs text-slate-400 font-medium">/100</span>
           </div>
         </div>
-        <p className="text-xs font-semibold mt-1">Evidence Score</p>
-        <p className="text-[10px] text-muted-foreground">{verified} of {total} skills verified</p>
+        <div className="text-center mt-1">
+          <span className={`inline-block text-[11px] font-semibold px-3 py-1 rounded-full border ${labelBg}`}>
+            {label}
+          </span>
+        </div>
+        <p className="text-xs text-slate-400 mt-2">{verified} of {total} skills verified</p>
       </CardContent>
     </Card>
   );
