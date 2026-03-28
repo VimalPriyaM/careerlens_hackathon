@@ -36,13 +36,13 @@ export function SkillCoverageBar({ evidenceScores }: SkillCoverageBarProps) {
 
         <div className="space-y-0">
           <ResponsiveContainer width="100%" height={Math.min(Math.max(data.length * 32, 180), 500)}>
-            <BarChart data={data} layout="vertical" margin={{ left: 0, right: 12, top: 0, bottom: 0 }}>
+            <BarChart data={data} layout="vertical" margin={{ left: 8, right: 12, top: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
               <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
               <YAxis
                 type="category"
                 dataKey="name"
-                width={90}
+                width={150}
                 tick={({ x, y, payload }: any) => {
                   const item = data.find(d => d.name === payload.value);
                   const imp = item?.importance || '';
@@ -52,7 +52,7 @@ export function SkillCoverageBar({ evidenceScores }: SkillCoverageBarProps) {
                         <tspan fill={imp === 'critical' ? '#ef4444' : imp === 'important' ? '#3b82f6' : '#94a3b8'} fontSize={8}>
                           {importanceIcon(imp)}{' '}
                         </tspan>
-                        {payload.value.length > 14 ? payload.value.substring(0, 14) + '…' : payload.value}
+                        {payload.value.length > 20 ? payload.value.substring(0, 20) + '…' : payload.value}
                       </text>
                     </g>
                   );
