@@ -25,5 +25,5 @@ export const MAX_CODE_SAMPLES_PER_REPO = 3;
 export const MAX_REPOS_FOR_CODE_REVIEW = 5;
 export const MAX_FILE_SIZE_FOR_REVIEW = 50000; // 50KB — skip very large files
 
-export const CLAUDE_MODEL = 'llama-3.3-70b-versatile';
+export const CLAUDE_MODEL = process.env.LLM_MODEL || 'llama-3.3-70b-versatile';
 export const CLAUDE_MAX_TOKENS = 4096;
