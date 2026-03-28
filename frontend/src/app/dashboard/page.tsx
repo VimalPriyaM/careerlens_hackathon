@@ -29,44 +29,52 @@ export default function DashboardPage() {
 
         const headers = { Authorization: `Bearer ${session.access_token}` };
 
-        // Fetch scan list (for history + previous scan comparison)
+        // If we have a cached scan, show it immediately and refresh in background
+        if (cachedScan) {
+          setLoading(false);
+        }
+
+        // Fetch scan list
         const listRes = await fetch(`${API_URL}/scans?limit=20`, { headers });
         if (!listRes.ok) throw new Error('Failed to fetch scans');
         const { scans } = await listRes.json();
 
         if (!scans || scans.length === 0) { setScan(null); setLoading(false); return; }
 
-        // Store history for trend chart
         setScanHistoryState(scans);
         setScanHistory(scans);
 
-        // Get full detail of latest scan (if not cached)
-        let latestScan = cachedScan;
-        if (!cachedScan || cachedScan.id !== scans[0].id) {
-          const detailRes = await fetch(`${API_URL}/scans/${scans[0].id}`, { headers });
-          if (!detailRes.ok) throw new Error('Failed to fetch scan details');
-          latestScan = await detailRes.json();
-          setScan(latestScan);
-          setCachedScan(latestScan);
+        // Fetch latest scan detail + previous scan in PARALLEL
+        const latestId = scans[0].id;
+        const needsLatest = !cachedScan || cachedScan.id !== latestId;
+
+        const currentRole = cachedScan?.target_role || scans[0].target_role;
+        const prevScanSummary = scans.length > 1
+          ? scans.slice(1).find((s: any) => s.target_role === currentRole)
+          : null;
+
+        const fetches: Promise<any>[] = [];
+
+        if (needsLatest) {
+          fetches.push(fetch(`${API_URL}/scans/${latestId}`, { headers }).then(r => r.ok ? r.json() : null));
+        } else {
+          fetches.push(Promise.resolve(null));
         }
 
-        // Find previous scan for same role to compute deltas
-        const currentRole = latestScan?.target_role;
-        if (currentRole && scans.length > 1) {
-          const prevScanSummary = scans.slice(1).find((s: any) => s.target_role === currentRole);
-          if (prevScanSummary) {
-            // Fetch full detail of previous scan for comparison
-            try {
-              const prevRes = await fetch(`${API_URL}/scans/${prevScanSummary.id}`, { headers });
-              if (prevRes.ok) {
-                const prevData = await prevRes.json();
-                setPreviousScan(prevData);
-              }
-            } catch {
-              // Previous scan detail fetch is non-critical
-              setPreviousScan(prevScanSummary);
-            }
-          }
+        if (prevScanSummary) {
+          fetches.push(fetch(`${API_URL}/scans/${prevScanSummary.id}`, { headers }).then(r => r.ok ? r.json() : null).catch(() => prevScanSummary));
+        } else {
+          fetches.push(Promise.resolve(null));
+        }
+
+        const [latestData, prevData] = await Promise.all(fetches);
+
+        if (latestData) {
+          setScan(latestData);
+          setCachedScan(latestData);
+        }
+        if (prevData) {
+          setPreviousScan(prevData);
         }
       } catch (e: any) {
         if (!cachedScan) setError(e.message);
