@@ -59,7 +59,7 @@ For every skill, it assigns one of **8 statuses**: from **"Fully Verified"** (al
 | **LLM** | Groq API (Llama 3.3 70B) for skill extraction, code review, gap analysis |
 | **APIs** | GitHub REST API (Octokit) |
 | **PDF Processing** | pdf-parse (extraction), html2canvas + jsPDF (export) |
-| **Deployment** | Vercel (frontend), Railway/Render (backend) |
+| **Deployment** | Vercel (frontend), Render/Render (backend) |
 
 ---
 
@@ -209,9 +209,9 @@ The frontend runs on `http://localhost:3000`.
 4. Add environment variables in Vercel project settings
 5. Deploy
 
-### Backend (Railway / Render)
+### Backend (Render / Render)
 
-1. Create new project on [Railway](https://railway.app) or [Render](https://render.com)
+1. Create new project on [Render](https://render.com) or [Render](https://render.com)
 2. Set root directory to `backend`
 3. Build command: `npm run build`
 4. Start command: `npm start`

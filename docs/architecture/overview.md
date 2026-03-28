@@ -14,7 +14,7 @@ CareerLens is a three-tier application: **Next.js frontend**, **Express backend*
                │ HTTPS + Bearer Token
                ▼
 ┌──────────────────────────────────┐
-│   Express Backend (Railway)       │
+│   Express Backend (Render)       │
 │  - Scan pipeline (parallel)       │
 │  - Evidence scoring engine        │
 │  - Chat service                   │

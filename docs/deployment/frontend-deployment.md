@@ -16,7 +16,7 @@
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
 | `NEXT_PUBLIC_SITE_URL` | `https://your-app.vercel.app` |
-| `NEXT_PUBLIC_API_URL` | `https://your-backend.railway.app/api` |
+| `NEXT_PUBLIC_API_URL` | `https://your-backend.render.com/api` |
 
 ## Build Settings
 

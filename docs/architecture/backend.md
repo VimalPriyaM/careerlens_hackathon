@@ -5,7 +5,7 @@
 **LLM:** Groq API (Llama 3.3 70B, OpenAI-compatible)
 **GitHub:** Octokit REST client
 **PDF:** pdf-parse library
-**Deployed on:** Railway
+**Deployed on:** Render
 
 ## File Structure
 

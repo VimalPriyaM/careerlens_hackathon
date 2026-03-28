@@ -38,6 +38,6 @@
 |---------|---------|
 | Supabase | PostgreSQL + Auth + Storage + RLS |
 | Vercel | Frontend hosting |
-| Railway | Backend hosting |
+| Render | Backend hosting |
 | Groq | LLM API (Llama 3.3 70B) |
 | GitHub API | Repository analysis |
